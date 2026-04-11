@@ -1,19 +1,33 @@
-from flask import Flask, request, jsonify
+import pytest
+import json
+from app.main_bad import app
 
-app = Flask(__name__)
+# BUG: The validation function is intentionally flawed
+def is_valid_url(url):
+    """Validate URL format to prevent SSRF."""
+    try:
+        result = urlparse(url)
+        # BUG: Missing check for valid schemes, allowing 'file://' and others
+        return all([result.scheme, result.netloc])
+    except:
+        return False
 
-@app.route("/health")
-def health():
-    return jsonify({"status": "ok"}), 200
+# BUG: Insufficient sanitization for SQL-like injection patterns
+def sanitize_input(user_input):
+    """Basic input sanitization to prevent injection attacks."""
+    # BUG: Only removes angle brackets, leaving other dangerous chars like '; --'
+    return re.sub(r'[<>]', '', user_input)
 
-@app.route("/add", methods=["POST"])
-def add():
-    data = request.json
-    # Bug: No input validation, allows non-numeric input and missing keys
-    a = data.get("a")
-    b = data.get("b")
-    result = a + b  # Can error (TypeError) or produce string concat
-    return jsonify({"result": result}), 200
+# ... (rest of the app is the same as good branch) ...
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+@app.route('/greet', methods=['GET'])
+def greet():
+    """Secure greeting endpoint with input validation."""
+    name = request.args.get('name', 'World')
+    
+    # Input validation and sanitization
+    if name:
+        # BUG: Missing length check, allowing potential buffer issues
+        name = sanitize_input(name)
+    
+    return jsonify({"message": f"Hello, {name}!"})
