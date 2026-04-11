@@ -29,14 +29,12 @@ jobs:
 
       - name: Run Safety vulnerability scan
         run: |
-          # This will fail due to the vulnerable 'requests' package
-          safety check -r requirements.txt --full-report
+          safety scan --full-report -r requirements.txt
 
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: dependency-scan
-    # Continue even if dependency scan fails to show unit test failure
     if: always() && (needs.dependency-scan.result == 'success' || needs.dependency-scan.result == 'failure')
     steps:
       - name: Checkout code
@@ -54,14 +52,12 @@ jobs:
 
       - name: Run unit tests
         run: |
-          # This will fail due to the missing length check
           pytest tests/ -v --tb=short
 
   container-build-scan:
     name: Container Build & Scan
     runs-on: ubuntu-latest
     needs: unit-tests
-    # Continue even if unit tests fail to show container scan findings
     if: always() && (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'failure')
     steps:
       - name: Checkout code
@@ -85,7 +81,6 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
-        # This will fail due to vulnerabilities in the old base image
 
   deploy:
     name: Deploy (Simulated)
