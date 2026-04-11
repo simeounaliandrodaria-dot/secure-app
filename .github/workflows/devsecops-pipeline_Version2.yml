@@ -1,4 +1,4 @@
-name: DevSecOps Pipeline
+name: devsecops-pipeline_Version2.yml
 
 on:
   push:
