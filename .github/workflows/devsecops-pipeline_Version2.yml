@@ -11,23 +11,25 @@ env:
 
 jobs:
   dependency-scan:
-    name: Dependency Vulnerability Scan (Trivy)
+    name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Trivy scanner on requirements.txt
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          scanners: 'vuln'
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          skip-dirs: 'app,tests'
-          trivyignores: '.trivyignore'
+          python-version: '3.12'
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Run vulnerability scan on dependencies
+        run: |
+          pip-audit -r requirements.txt
 
   unit-tests:
     name: Unit Tests
@@ -71,7 +73,7 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
 
       - name: Run Trivy vulnerability scanner on container image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.29.0
         with:
           image-ref: '${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}'
           format: 'table'
