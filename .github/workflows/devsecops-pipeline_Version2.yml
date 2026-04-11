@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run dependency vulnerability scan
-        uses: pypa/gh-action-pip-audit@v1
+        uses: pypa/gh-action-pip-audit@main
         with:
           requirements: requirements.txt
 
