@@ -1,0 +1,18 @@
+rules:
+  - id: hardcoded-secret-pattern
+    pattern-either:
+      - pattern: |
+          $PASSWORD = "..."
+      - pattern: |
+          $TOKEN = "..."
+      - pattern: |
+          $SECRET = "..."
+    message: "Potential hardcoded secret detected. Use environment variables."
+    languages: [python]
+    severity: ERROR
+
+  - id: dangerous-subprocess-call
+    pattern: subprocess.call(...)
+    message: "Avoid using subprocess with unsanitised input."
+    languages: [python]
+    severity: WARNING
