@@ -42,23 +42,32 @@ jobs:
           path: gitleaks-report.json
 
   dependency-scan:
-    name: Dependency Vulnerability Scan
+    name: Dependency Vulnerability Scan (Trivy – Filesystem)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install and run pip-audit
+
+      - name: Install Trivy
         run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt -f json > pip-audit.json
-        continue-on-error: false
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -qq
+          sudo apt-get install -y trivy
+
+      - name: Scan dependencies (including transitive)
+        run: |
+          trivy fs --scanners vuln \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            --format json \
+            --output trivy-fs-results.json \
+            .
+
       - name: Upload dependency scan report
         uses: actions/upload-artifact@v4
         with:
           name: dependency-scan
-          path: pip-audit.json
+          path: trivy-fs-results.json
 
   unit-tests:
     name: Unit Tests
