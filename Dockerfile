@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.12-slim-bookworm
 
 # Apply the latest OS security patches
-RUN apt-get update && apt-get upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get dist-upgrade -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create non‑root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
