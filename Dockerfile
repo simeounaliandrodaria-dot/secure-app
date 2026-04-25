@@ -1,16 +1,35 @@
-# VULNERABLE: Uses an old, unsupported Python 3.8 image based on Debian 10 (buster)
-FROM python:3.8-slim-buster
+# Build stage to compile dependencies
+FROM python:3.12-slim-bookworm AS builder
 
-# Missing best practices: no non-root user, no multi-stage build, no security updates
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Final stage – minimal, hardened
+FROM python:3.12-slim-bookworm
+
+# Apply the latest OS security patches
+RUN apt-get update && apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non‑root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+WORKDIR /app
+
+# Copy only the installed packages and the application
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY app/ ./app/
+
+# Change ownership and switch to non‑root user
+RUN chown -R appuser:appuser /app
+USER appuser
 
 EXPOSE 5000
 
-# Run as root user (vulnerable)
 CMD ["python", "-m", "flask", "--app", "app.main", "run", "--host=0.0.0.0"]
